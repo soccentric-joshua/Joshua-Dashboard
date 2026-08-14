@@ -1,4 +1,4 @@
-# Joshua-Dashboard — specs Remote: `git@github.com:SiliconCentric/Joshua-Dashboard.git`
+# Joshua-Dashboard — specs Remote: `git@github.com:soccentric-joshua/Joshua-Dashboard.git`
 Stack: node. A standalone dashboard UI leaf. Runs anywhere; not part of the on-device image. ## Layout * `webui/` — Next.js app-router frontend. Has its own `package.json`, separate from the root one.
 * `contract-tests/` — pytest suite with its own Makefile. Python, not JS.
 * `docker/` — packaging. ## Coupling * **Not proto-coupled to Joshua-HAL.** Reads from Joshua-Server over HTTP/SSE.
