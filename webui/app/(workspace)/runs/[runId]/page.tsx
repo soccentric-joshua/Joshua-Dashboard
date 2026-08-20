@@ -1,17 +1,17 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, Boxes, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, Boxes, CheckCircle2, Clock, Target, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { getRun, getRunResults } from "@/lib/api";
+import { getRun, getRunResults, getRunBaselineDiff, setRunBaseline } from "@/lib/api";
 import type { TestResult } from "@/lib/types/api";
-import { formatClock, formatDuration, formatRunDuration, resultVariant, safeDecodeSegment, statusVariant } from "@/lib/utils";
+import { baselineVariant, formatClock, formatDuration, formatRunDuration, resultVariant, safeDecodeSegment, statusVariant } from "@/lib/utils";
 import { useAppShell } from "@/state/app-shell-context";
 
 function resultValue(result: TestResult): string {
@@ -32,6 +32,18 @@ export default function RunDetailPage() {
         queryKey: ["run", runId],
         queryFn: () => getRun(runId),
         enabled: serverOnline !== false,
+        retry: 0,
+    });
+
+    // Baseline: mark-as-baseline mutation + diff comparison.
+    const setBaseline = useMutation({
+        mutationFn: () => setRunBaseline(runId),
+        onSuccess: () => run.refetch(),
+    });
+    const baselineDiff = useQuery({
+        queryKey: ["run-baseline-diff", runId],
+        queryFn: () => getRunBaselineDiff(runId),
+        enabled: serverOnline !== false && Boolean(run.data?.baseline_flag),
         retry: 0,
     });
 
@@ -76,6 +88,17 @@ export default function RunDetailPage() {
                         <Link href="/modules">
                             <Button type="button" variant="secondary">Open modules</Button>
                         </Link>
+                        {!run.data?.baseline_flag && run.data?.status?.toLowerCase().includes("complete") && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                disabled={setBaseline.isPending}
+                                onClick={() => setBaseline.mutate()}
+                                title="Mark this run as the active baseline for its mode"
+                            >
+                                <Target size={14} /> Set as baseline
+                            </Button>
+                        )}
                     </div>
                 </CardHeader>
                 <CardContent className="grid gap-3 text-sm md:grid-cols-4">
@@ -98,6 +121,84 @@ export default function RunDetailPage() {
                     <CardHeader className="pb-2"><CardDescription>Modules With Evidence</CardDescription><CardTitle className="flex items-center gap-2 text-3xl"><Boxes size={24} />{Object.keys(grouped).length}</CardTitle></CardHeader>
                 </Card>
             </section>
+
+            {run.data?.baseline_flag && (
+                <Card>
+                    <CardHeader className="pb-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <CardTitle className="text-lg">Baseline comparison</CardTitle>
+                            <CardDescription>
+                                {baselineDiff.data?.has_baseline
+                                    ? `Compared against the active baseline for mode “${run.data.mode}” at ${baselineDiff.data.drift_pct}% drift.`
+                                    : "No baseline run exists for this mode yet — mark a completed run as baseline to enable drift comparison."}
+                            </CardDescription>
+                        </div>
+                    </CardHeader>
+                    {baselineDiff.data?.has_baseline && (
+                        <>
+                            <Separator />
+                            <CardContent className="p-0">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Module / Test</TableHead>
+                                            <TableHead>Baseline</TableHead>
+                                            <TableHead>Current</TableHead>
+                                            <TableHead>Classification</TableHead>
+                                            <TableHead>Drift</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {baselineDiff.data.entries.map((entry) => (
+                                            <TableRow key={`${entry.module_id}:${entry.test_id}`}>
+                                                <TableCell>
+                                                    <div className="font-medium">{entry.module_id}</div>
+                                                    <div className="text-xs text-muted-foreground">{entry.test_id}</div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={resultVariant(entry.baseline_status)}>{entry.baseline_status || "absent"}</Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={resultVariant(entry.current_status)}>{entry.current_status || "absent"}</Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant={baselineVariant(entry.classification)}>{entry.classification}</Badge>
+                                                </TableCell>
+                                                <TableCell className="max-w-[300px]">
+                                                    {entry.drifts.length === 0 ? (
+                                                        <span className="text-xs text-muted-foreground">—</span>
+                                                    ) : (
+                                                        <div className="space-y-1">
+                                                            {entry.drifts.map((d) => (
+                                                                <div key={d.key} className="flex flex-wrap items-center gap-1 text-xs">
+                                                                    <span className="font-mono text-muted-foreground">{d.key}:</span>
+                                                                    <span>{d.baseline_value} → {d.current_value}</span>
+                                                                    {d.numeric && (
+                                                                        <span className={Math.abs(d.pct) > baselineDiff.data.drift_pct ? "font-semibold text-warning" : "text-muted-foreground"}>
+                                                                            {d.pct >= 0 ? "+" : ""}{d.pct.toFixed(1)}%
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        {baselineDiff.data.entries.length === 0 && (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="px-4 py-6 text-center text-muted-foreground">
+                                                    No comparable tests between this run and the baseline.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </>
+                    )}
+                </Card>
+            )}
 
             {Object.entries(grouped).map(([moduleId, rows]) => (
                 <Card key={moduleId}>

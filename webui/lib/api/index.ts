@@ -12,6 +12,8 @@ import type {
   RunResultsResponse,
   RunsResponse,
   TargetInfo,
+  BaselineDiffResponse,
+  ModuleHeatmapResponse,
 } from "@/lib/types/api";
 
 export async function getHealth(): Promise<HealthResponse> {
@@ -97,6 +99,36 @@ export async function cancelRun(runId: string): Promise<{ ok: boolean }> {
   return fetchJson<{ ok: boolean }>(`/api/v1/runs/${runId}/cancel`, {
     method: "POST",
   });
+}
+
+// Mark the run as the active baseline for its mode (server clears prior baselines).
+export async function setRunBaseline(runId: string): Promise<{ ok: boolean }> {
+  return fetchJson<{ ok: boolean }>(`/api/v1/runs/${runId}/baseline`, {
+    method: "POST",
+  });
+}
+
+// Compare the run against the mode's active baseline run.
+export async function getRunBaselineDiff(
+  runId: string,
+  driftPct = 5,
+): Promise<BaselineDiffResponse> {
+  return fetchJson<BaselineDiffResponse>(
+    `/api/v1/runs/${runId}/baseline-diff?drift_pct=${encodeURIComponent(String(driftPct))}`,
+  );
+}
+
+// Numeric value of a metric field per (test_id, timestamp) over a time range.
+export async function getModuleHeatmap(
+  moduleId: string,
+  field: string,
+  params?: { testId?: string; from?: string; to?: string },
+): Promise<ModuleHeatmapResponse> {
+  const q = new URLSearchParams({ field });
+  if (params?.testId) q.set("test_id", params.testId);
+  if (params?.from) q.set("from", params.from);
+  if (params?.to) q.set("to", params.to);
+  return fetchJson<ModuleHeatmapResponse>(`/api/v1/modules/${moduleId}/heatmap?${q.toString()}`);
 }
 
 export async function getRunResults(

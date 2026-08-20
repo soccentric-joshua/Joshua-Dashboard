@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { getRunResults, getRuns } from "@/lib/api";
 import { testsForModule, type ModuleTestDefinition, type ModuleTestField } from "@/lib/modules/catalog";
 import { parseSsePayload, openSse } from "@/lib/sse";
+import { ModuleHeatmap } from "@/components/module-page/module-heatmap";
 import type { ExecutionMode, ModuleInfo, Run, RunEventState, TestResult } from "@/lib/types/api";
 import { useAppShell } from "@/state/app-shell-context";
 import { PLATFORM_SLUG } from "@/lib/platform";
@@ -405,6 +406,9 @@ export function ModuleWorkspace({ module }: { module: ModuleInfo }) {
           </button>
         </div>
       )}
+
+      {/* ── Trend heatmap (numeric metrics over time) ───────────────── */}
+      <ModuleHeatmap moduleId={module.id} results={mergedResults} />
 
       {/* ── HAL Tests table ─────────────────────────────────────────── */}
       <Card className={cn(!moduleEnabled && "opacity-60 pointer-events-none")}>

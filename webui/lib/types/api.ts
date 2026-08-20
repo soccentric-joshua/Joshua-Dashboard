@@ -49,6 +49,50 @@ export interface Run {
   tags: Record<string, unknown>;
 }
 
+// ── Baseline comparison & module heatmap ──────────────────────────────────────
+// Mirror of the server's /api/v1/runs/{id}/baseline-diff and
+// /api/v1/modules/{id}/heatmap responses.
+
+export interface MetricDrift {
+  key: string;
+  baseline_value: string;
+  current_value: string;
+  delta: number;
+  pct: number;
+  numeric: boolean;
+}
+
+export interface BaselineDiffEntry {
+  module_id: string;
+  test_id: string;
+  baseline_status: string;
+  current_status: string;
+  classification: string;
+  drifts: MetricDrift[];
+}
+
+export interface BaselineDiffResponse {
+  run_id: string;
+  drift_pct: number;
+  has_baseline: boolean;
+  entries: BaselineDiffEntry[];
+}
+
+export interface HeatmapCell {
+  test_id: string;
+  timestamp: string;
+  value: number;
+  status: string;
+  severity: string;
+}
+
+export interface ModuleHeatmapResponse {
+  module_id: string;
+  test_id: string;
+  field: string;
+  cells: HeatmapCell[];
+}
+
 export type TypedValue = boolean | number | string;
 
 export interface TestResult {

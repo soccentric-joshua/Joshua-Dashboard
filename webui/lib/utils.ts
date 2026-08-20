@@ -48,6 +48,18 @@ export function resultVariant(status: string | undefined): "success" | "destruct
     return "secondary";
 }
 
+/** Map a baseline-diff classification to a badge variant. */
+export function baselineVariant(
+    classification: string | undefined,
+): "success" | "destructive" | "warning" | "secondary" {
+    const c = classification?.toLowerCase() ?? "";
+    if (c === "unchanged" || c === "new_pass" || c === "recovered") return "success";
+    if (c === "regressed" || c === "new_failure") return "destructive";
+    if (c === "drifted") return "warning";
+    if (c === "disappeared") return "secondary";
+    return "secondary";
+}
+
 /** Normalise a raw API status string to Title Case for display (e.g. "PASS" → "Pass"). */
 export function normalizeStatus(status: string | undefined): string {
     if (!status) return "—";
