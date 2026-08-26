@@ -1,30 +1,18 @@
 "use client";
 
-import { BarChart2, FileText, LineChart, Download } from "lucide-react";
+import { BarChart2, Ban } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
-const PLANNED_SECTIONS = [
-    {
-        icon: FileText,
-        title: "Test Summary",
-        description: "Aggregated pass/fail statistics",
-        source: "GET /api/v1/runs?limit=200",
-    },
-    {
-        icon: LineChart,
-        title: "Trend Analysis",
-        description: "Pass/fail trends over time",
-        source: "GET /api/v1/runs?limit=2000 (time-bucketed)",
-    },
-    {
-        icon: Download,
-        title: "Export Reports",
-        description: "Download reports in CSV / PDF / JSON",
-        source: "GET /api/v1/runs/{id}/export",
-    },
-] as const;
-
+/**
+ * Reporting is intentionally disabled.
+ *
+ * The aggregation, time-bucketed trend, and export endpoints
+ * (`GET /api/v1/runs/{id}/export`, etc.) are not implemented in the Server
+ * contract yet. This route must not imply that the feature is available or
+ * advertise planned endpoints as if they worked, so it renders an explicit
+ * "not available" state and is not reachable from the primary navigation.
+ */
 export default function ReportingPage() {
     return (
         <div className="flex flex-col gap-6 p-6">
@@ -38,48 +26,30 @@ export default function ReportingPage() {
                 </div>
             </div>
 
-            <div className="rounded-xl border border-warning/40 bg-warning/5 px-4 py-3">
-                <p className="text-sm font-medium text-foreground">Coming soon</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                    This page is a placeholder. The dashboard today exposes the
-                    raw data via the Runs and Modules surfaces — click below to
-                    see what would feed each planned section.
-                </p>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {PLANNED_SECTIONS.map(({ icon: Icon, title, description, source }) => (
-                    <Card key={title}>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2">
-                                <Icon className="h-4 w-4 text-muted-foreground" />
-                                {title}
-                            </CardTitle>
-                            <CardDescription>{description}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <p className="text-xs text-muted-foreground">
-                                Will be sourced from
-                            </p>
-                            <code className="block rounded-md border border-border bg-muted px-2 py-1 font-mono text-[11px] text-foreground">
-                                {source}
-                            </code>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm">
-                <span className="text-muted-foreground">
-                    In the meantime, runs and modules are the source of truth.
-                </span>
-                <Link
-                    href="/runs"
-                    className="font-medium text-primary hover:underline"
-                >
-                    Go to Runs →
-                </Link>
-            </div>
+            <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                        <Ban className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-medium text-foreground">
+                            Reporting is not available yet
+                        </p>
+                        <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+                            The reporting, trend-analysis, and export endpoints
+                            are not implemented, so this feature is disabled. Raw
+                            run and module data remain available on the Runs and
+                            Modules pages.
+                        </p>
+                    </div>
+                    <Link
+                        href="/runs"
+                        className="font-medium text-primary hover:underline"
+                    >
+                        Go to Runs →
+                    </Link>
+                </CardContent>
+            </Card>
         </div>
     );
 }

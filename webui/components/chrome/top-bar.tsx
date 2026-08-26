@@ -17,6 +17,7 @@ type NavItem = {
   label: string;
   icon: React.ComponentType<{ className?: string; strokeWidth?: number | string }>;
   matchPrefix?: string;
+  disabled?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -24,7 +25,9 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/modules", label: "Modules", icon: Boxes },
   { href: "/runs", label: "Run History", icon: History },
   { href: "/ai-llm", label: "AI/LLM", icon: Bot },
-  { href: "/reporting", label: "Reporting", icon: BarChart2 },
+  // Reporting endpoints (/api/v1/runs/{id}/export, time-bucketed trends) do not
+  // exist yet; keep the entry visible but disabled rather than implying it works.
+  { href: "/reporting", label: "Reporting", icon: BarChart2, disabled: true },
   { href: "/settings", label: "Settings", icon: Settings, matchPrefix: "/settings" },
 ];
 
@@ -80,8 +83,21 @@ export function TopBar({
 
         {/* Nav links — desktop */}
         <nav className="hidden items-center gap-1 md:flex" aria-label="Primary navigation">
-          {NAV_ITEMS.map(({ href, label, icon: Icon, matchPrefix }) => {
+          {NAV_ITEMS.map(({ href, label, icon: Icon, matchPrefix, disabled }) => {
             const active = matchPrefix ? pathname.startsWith(matchPrefix) : pathname === href || pathname.startsWith(href + "/");
+            if (disabled) {
+              return (
+                <span
+                  key={href}
+                  aria-disabled="true"
+                  title="Not available — reporting endpoints are not implemented"
+                  className="flex cursor-not-allowed items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground/50"
+                >
+                  <Icon className="h-4 w-4" strokeWidth={2} />
+                  {label}
+                </span>
+              );
+            }
             return (
               <Link
                 key={href}
@@ -115,8 +131,21 @@ export function TopBar({
 
       {/* Mobile nav strip */}
       <nav className="flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 pb-1.5 pt-1 md:hidden" aria-label="Mobile navigation">
-        {NAV_ITEMS.map(({ href, label, icon: Icon, matchPrefix }) => {
+        {NAV_ITEMS.map(({ href, label, icon: Icon, matchPrefix, disabled }) => {
           const active = matchPrefix ? pathname.startsWith(matchPrefix) : pathname === href || pathname.startsWith(href + "/");
+          if (disabled) {
+            return (
+              <span
+                key={href}
+                aria-disabled="true"
+                title="Not available — reporting endpoints are not implemented"
+                className="flex shrink-0 cursor-not-allowed items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium text-muted-foreground/50"
+              >
+                <Icon className="h-3.5 w-3.5" strokeWidth={2} />
+                {label}
+              </span>
+            );
+          }
           return (
             <Link
               key={href}
